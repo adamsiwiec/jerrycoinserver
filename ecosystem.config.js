@@ -2,12 +2,10 @@ module.exports = {
   apps : [{
     name: 'API',
     script: 'index.js',
-
-    // Options reference: https://pm2.keymetrics.io/docs/usage/application-declaration/
-    args: 'one two',
     instances: "max",
     autorestart: true,
     watch: false,
+    exec_mode : "cluster",
     max_memory_restart: '1G',
     env: {
       NODE_ENV: 'development'
@@ -28,3 +26,4 @@ module.exports = {
     }
   }
 };
+
