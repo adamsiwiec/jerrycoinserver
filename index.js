@@ -2,13 +2,26 @@ const express = require("express");
 const http = require("http");
 const socketIo = require("socket.io");
 
+
 //Port from environment variable or default - 4001
 const port = process.env.PORT || 4001;
 
 //Setting up express and adding socketIo middleware
 const app = express();
 const server = http.createServer(app);
-const io = socketIo(server);
+const io = socketIo(server, {
+  transports: ['websocket']
+});
+
+const redis = require('redis');
+const redisAdapter = require('socket.io-redis');
+let pub = redis.createClient(process.env.REDIS_URL);
+let sub = redis.createClient(process.env.REDIS_URL);
+
+io.adapter(redisAdapter({
+  pubClient: pub,
+  subClient: sub
+}));
 
 let blockchain = [];
 let TxPool = [];
