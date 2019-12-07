@@ -20,6 +20,8 @@ const redisAdapter = require('socket.io-redis');
 let pub = redis.createClient(process.env.REDIS_URL);
 let sub = redis.createClient(process.env.REDIS_URL);
 
+pub.del("bc", "tx")
+sub.del("bc", "tx");
 
 
 io.adapter(redisAdapter({
@@ -64,8 +66,8 @@ io.on('connection', (socket) => {
     
   });
 
-  socket.on('sendTx', (tx) => {
-    let TxPool = getTxPool();
+  socket.on('sendTx', async (tx) => {
+    let TxPool = await getTxPool();
     TxPool.push(tx);
     pub.set("tx", JSON.stringify(TxPool));
     socket.broadcast.emit("tx", TxPool);
