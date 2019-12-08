@@ -10,7 +10,8 @@ const port = process.env.PORT || 4001;
 const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, {
-  transports: ['websocket']
+  transports: ['websocket'],
+  pingInterval: 500
 });
 
 const redis = require('redis');
@@ -20,12 +21,10 @@ const redisAdapter = require('socket.io-redis');
 let pub = redis.createClient(process.env.REDIS_URL);
 let sub = redis.createClient(process.env.REDIS_URL);
 
-
 io.adapter(redisAdapter({
   pubClient: pub,
   subClient: sub
 }));
-
 
 let getBlockchain = async () => {
   let blockchain = await pub.getAsync("bc");
@@ -53,10 +52,9 @@ io.on('connection', (socket) => {
 
   socket.on('setUser', async (userObject) => {
   let users = await getUsers();
-  users = JSON.parse(users);
   users.push(userObject);
-  socket.username = userObject;
-  pub.set("users", users.toString());
+  socket.username = userObject.username;
+  pub.set("users", JSON.stringify(users));
   socket.broadcast.emit("users", users);
   });
 
@@ -88,9 +86,16 @@ io.on('connection', (socket) => {
   })
 
   socket.on('disconnect', async () => {
-    let users = await getUsers();
-    users.remove()
-    pub.set("users", users.toString());
+    if(socket.username == undefined) return;
+    let users = await getUsers();  
+    users = users.filter((obj) => {
+      return obj.username !== socket.username;
+    });
+    pub.set("users", JSON.stringify(users));
+    socket.broadcast.emit("userLeft", {
+      users: users,
+      left: socket.username
+    });
   })
 
 });
