@@ -51,7 +51,7 @@ let getUsers = async () => {
 
 io.on('connection', (socket) => {
 
-  socket.on('setUser', (userObject) => {
+  socket.on('setUser', async (userObject) => {
   let users = await getUsers();
   users = JSON.parse(users);
   users.push(userObject);
@@ -87,7 +87,7 @@ io.on('connection', (socket) => {
     socket.broadcast.emit("tx", TxPool);
   })
 
-  socket.on('disconnect', () => {
+  socket.on('disconnect', async () => {
     let users = await getUsers();
     users.remove()
     pub.set("users", users.toString());
