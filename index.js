@@ -20,9 +20,6 @@ const redisAdapter = require('socket.io-redis');
 let pub = redis.createClient(process.env.REDIS_URL);
 let sub = redis.createClient(process.env.REDIS_URL);
 
-pub.del("bc", "tx")
-sub.del("bc", "tx");
-
 
 io.adapter(redisAdapter({
   pubClient: pub,
@@ -44,10 +41,27 @@ let getTxPool = async () => {
 
 }
 
+let getUsers = async () => {
+  let users = await pub.getAsync("users");
+  if(users == null) return [];
+  return JSON.parse(users);
+
+}
+
 
 io.on('connection', (socket) => {
+
+  socket.on('setUser', (userObject) => {
+  let users = await getUsers();
+  users = JSON.parse(users);
+  users.push(userObject);
+  socket.username = userObject;
+  pub.set("users", users.toString());
+  socket.broadcast.emit("users", users);
+  });
+
   socket.on('getTxPool', async () => {
-    
+    socket.emit("users", await getUsers());
     socket.emit("resTxPool",await getTxPool());
   });
 
@@ -71,6 +85,12 @@ io.on('connection', (socket) => {
     TxPool.push(tx);
     pub.set("tx", JSON.stringify(TxPool));
     socket.broadcast.emit("tx", TxPool);
+  })
+
+  socket.on('disconnect', () => {
+    let users = await getUsers();
+    users.remove()
+    pub.set("users", users.toString());
   })
 
 });
